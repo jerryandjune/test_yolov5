@@ -1,0 +1,40 @@
+import json
+from sklearn.model_selection import train_test_split
+
+# 读取JSON文件
+with open('data.json', 'r', encoding='utf-8') as f:
+    data = json.load(f)
+
+# 数据清洗：去重
+data = [dict(t) for t in {tuple(d.items()) for d in data}]
+
+# 数据清洗：去除空内容或无效内容（仅含标点或少于5个字符的内容）
+data = [item for item in data if len(item['content'].strip()) > 5]
+
+# 数据清洗：去除极短或极长评论（假设内容字数应在5到500之间）
+data = [item for item in data if 5 <= len(item['content']) <= 500]
+
+# 再次统计正向评价和负面评价的数量
+summary_counts = {'正向评价': 0, '负面评价': 0}
+for item in data:
+    summary_counts[item['summary']] += 1
+
+total = sum(summary_counts.values())
+positive_ratio = summary_counts['正向评价'] / total
+negative_ratio = summary_counts['负面评价'] / total
+
+print(f"清洗后正向评价比例: {positive_ratio:.2f}")
+print(f"清洗后负面评价比例: {negative_ratio:.2f}")
+
+# 按比例划分训练集和验证集
+train_data, validation_data = train_test_split(data, test_size=0.2, stratify=[item['summary'] for item in data])
+
+# 保存划分后的数据
+with open('train_data_cleaned.json', 'w', encoding='utf-8') as f:
+    json.dump(train_data, f, ensure_ascii=False, indent=4)
+
+with open('validation_data_cleaned.json', 'w', encoding='utf-8') as f:
+    json.dump(validation_data, f, ensure_ascii=False, indent=4)
+
+print(f"训练集大小: {len(train_data)}")
+print(f"验证集大小: {len(validation_data)}")
